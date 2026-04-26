@@ -1,0 +1,7 @@
+torch
+transformers
+librosa
+accelerate
+soundfile
+pydub
+datasets

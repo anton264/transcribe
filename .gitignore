@@ -1,0 +1,6 @@
+*.mp3
+*.md
+*.m4a
+*.qta
+cache/
+.venv/
