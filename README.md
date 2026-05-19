@@ -36,5 +36,4 @@ The script will automatically detect and use hardware acceleration if available 
 ## Pandoc conversion
 
 ```sh
-podman run --rm        --volume "$(pwd):/data:Z"        --userns=keep-id        docker.io/pandoc/extra template.md -o example.pdf --template eisvogel --syntax-highlighting idiomatic
-```
+podman run --rm --volume "$(pwd):/data:Z" --userns=keep-id docker.io/pandoc/extra template.md -o example.pdf --template eisvogel --syntax-highlighting idiomatic
