@@ -21,7 +21,7 @@ def convert_to_mp3(input_file, output_file):
         print(f"Error converting file: {e}")
         return False
 
-def transcribe_audio(file_path, output_md_path):
+def transcribe_audio(file_path, output_md_path, not_swedish=False):
     print("Loading model...")
     device = "cpu"
     if torch.cuda.is_available():
@@ -29,7 +29,11 @@ def transcribe_audio(file_path, output_md_path):
     elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
         device = "mps"
     torch_dtype = torch.float16 if torch.cuda.is_available() else torch.float32
-    model_id = "KBLab/kb-whisper-large"
+    
+    if not_swedish:
+        model_id = "openai/whisper-large-v3"
+    else:
+        model_id = "KBLab/kb-whisper-large"
 
     model = AutoModelForSpeechSeq2Seq.from_pretrained(
         model_id, torch_dtype=torch_dtype, use_safetensors=True, cache_dir="cache"
@@ -48,9 +52,14 @@ def transcribe_audio(file_path, output_md_path):
 
     print(f"Transcribing {file_path}...")
     timebefore = datetime.datetime.now()
+    
+    generate_kwargs = {"task": "transcribe"}
+    if not not_swedish:
+        generate_kwargs["language"] = "sv"
+
     res = pipe(file_path, 
                chunk_length_s=30,
-               generate_kwargs={"task": "transcribe", "language": "sv"})
+               generate_kwargs=generate_kwargs)
     print("Time after pipeline: ", datetime.datetime.now())
     print("Time to transcribe: ", datetime.datetime.now() - timebefore)
     
@@ -64,6 +73,7 @@ def transcribe_audio(file_path, output_md_path):
 def main():
     parser = argparse.ArgumentParser(description="Convert an audio file to mp3 and transcribe it.")
     parser.add_argument("input_file", help="Path to the input audio file")
+    parser.add_argument("--non-swedish", action="store_true", help="Indicates the sound file is not Swedish. Uses openai/whisper-large-v3 model.")
     args = parser.parse_args()
 
     input_file = args.input_file
@@ -84,7 +94,7 @@ def main():
     else:
         audio_to_transcribe = input_file
 
-    transcribe_audio(audio_to_transcribe, md_file)
+    transcribe_audio(audio_to_transcribe, md_file, not_swedish=args.non_swedish)
 
 if __name__ == "__main__":
     main()

@@ -3,5 +3,8 @@
 *.md
 *.m4a
 *.qta
+*.wav
+*.pdf
+*.mp4
 cache/
 .venv/
