@@ -32,3 +32,9 @@ python process_audio.py <path_to_audio_file>
 ## Hardware Acceleration
 
 The script will automatically detect and use hardware acceleration if available (CUDA for NVIDIA GPUs or MPS for Apple Silicon), falling back to the CPU otherwise. Using a GPU significantly decreases transcription time.
+
+## Pandoc conversion
+
+```sh
+podman run --rm        --volume "$(pwd):/data:Z"        --userns=keep-id        docker.io/pandoc/extra template.md -o example.pdf --template eisvogel --syntax-highlighting idiomatic
+```

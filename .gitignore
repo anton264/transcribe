@@ -1,5 +1,6 @@
 *.mp3
 !README.md
+!template.md
 *.md
 *.m4a
 *.qta
