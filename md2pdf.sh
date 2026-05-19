@@ -20,4 +20,5 @@ podman run --rm \
     -o "$OUTPUT_FILE" \
     --template eisvogel \
     --syntax-highlighting idiomatic \
-    --metadata title="$TITLE"
+    --metadata title="$TITLE" \
+    --metadata date="$(date +%F)"
