@@ -25,8 +25,10 @@ def transcribe_audio(file_path, output_md_path, not_swedish=False):
     print("Loading model...")
     device = "cpu"
     if torch.cuda.is_available():
+        print("CUDA is available")
         device = "cuda:0"
     elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+        print("MPS is available")
         device = "mps"
     torch_dtype = torch.float16 if torch.cuda.is_available() else torch.float32
     
