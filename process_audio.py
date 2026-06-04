@@ -30,14 +30,14 @@ def transcribe_audio(file_path, output_md_path, not_swedish=False):
     elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
         print("MPS is available")
         device = "mps"
-    elif device == "cpu":
-        print("CPU is available. It will be slow.")
+    else:
+        raise RuntimeError("No GPU available. CPU transcription is disabled.")
     torch_dtype = torch.float16 if torch.cuda.is_available() else torch.float32
     
     if not_swedish:
         model_id = "openai/whisper-large-v3"
     else:
-        model_id = "KBLab/kb-whisper-large"
+        model_id = "KBLab/kb-whisper-tiny"
 
     model = AutoModelForSpeechSeq2Seq.from_pretrained(
         model_id, torch_dtype=torch_dtype, use_safetensors=True, cache_dir="cache"
@@ -67,12 +67,18 @@ def transcribe_audio(file_path, output_md_path, not_swedish=False):
     print("Time after pipeline: ", datetime.datetime.now())
     print("Time to transcribe: ", datetime.datetime.now() - timebefore)
     
-    with open(output_md_path, "w", encoding="utf-8") as f:
-        if isinstance(res, dict) and "text" in res:
-            f.write(res["text"])
-        else:
-            f.write(str(res))
-    print(f"Transcription saved to {output_md_path}")
+    transcription_text = ""
+    if isinstance(res, dict) and "text" in res:
+        transcription_text = res["text"]
+    else:
+        transcription_text = str(res)
+        
+    if output_md_path:
+        with open(output_md_path, "w", encoding="utf-8") as f:
+            f.write(transcription_text)
+        print(f"Transcription saved to {output_md_path}")
+        
+    return transcription_text
 
 def main():
     parser = argparse.ArgumentParser(description="Convert an audio file to mp3 and transcribe it.")
