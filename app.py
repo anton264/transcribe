@@ -4,7 +4,7 @@ import uuid
 import threading
 import subprocess
 from flask import Flask, request, jsonify, render_template, send_file
-
+from werkzeug.utils import secure_filename
 
 from process_audio import convert_to_mp3, transcribe_audio
 
@@ -106,7 +106,7 @@ def upload_file():
     not_swedish = request.form.get('not_swedish') == 'true'
     
     task_id = str(uuid.uuid4())
-    filename = f"{task_id}_{file.filename}"
+    filename = f"{task_id}_{secure_filename(file.filename)}"
     file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     file.save(file_path)
     
