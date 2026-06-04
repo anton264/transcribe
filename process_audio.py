@@ -30,6 +30,8 @@ def transcribe_audio(file_path, output_md_path, not_swedish=False):
     elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
         print("MPS is available")
         device = "mps"
+    elif device == "cpu":
+        print("CPU is available. It will be slow.")
     torch_dtype = torch.float16 if torch.cuda.is_available() else torch.float32
     
     if not_swedish:
