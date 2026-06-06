@@ -3,11 +3,13 @@ import os
 import re
 import uuid
 import threading
-import subprocess
+import asyncio
 import datetime
 import glob
 from flask import Flask, request, jsonify, render_template, send_from_directory
 from werkzeug.utils import secure_filename
+
+from google.antigravity import Agent, LocalAgentConfig
 
 from process_audio import convert_to_mp3, transcribe_audio
 
@@ -113,7 +115,7 @@ def process_file_in_background(task_id, file_path, notes, not_swedish, include_n
 
         tasks[task_id]['status'] = 'Generating summary with Antigravity AI...'
 
-        # Build prompt for agy
+        # Build prompt for the Antigravity SDK
         prompt = (
             "Summarize the following notes and transcription. "
             "Write the summary as minutes from a meeting, making it structured and easy to read. "
@@ -124,17 +126,19 @@ def process_file_in_background(task_id, file_path, notes, not_swedish, include_n
             f"Transcription:\n{transcription_text}"
         )
 
-        # Call the agy CLI tool
-        result = subprocess.run(
-            ['agy', '--print', prompt],
-            capture_output=True,
-            text=True
-        )
+        # Call the Antigravity SDK
+        async def _generate_summary():
+            config = LocalAgentConfig(
+                system_instructions=(
+                    "You are a helpful assistant that summarizes meeting notes "
+                    "and transcriptions into structured, readable minutes in Swedish."
+                ),
+            )
+            async with Agent(config) as agent:
+                response = await agent.chat(prompt)
+                return await response.text()
 
-        if result.returncode != 0:
-            raise Exception(f"Antigravity CLI failed: {result.stderr}")
-
-        summary_text = result.stdout
+        summary_text = asyncio.run(_generate_summary())
 
         if tasks[task_id].get('cancelled'):
             tasks[task_id]['status'] = 'Cancelled'

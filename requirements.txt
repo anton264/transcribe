@@ -5,3 +5,4 @@ accelerate
 soundfile
 pydub
 datasets
+google-antigravity
