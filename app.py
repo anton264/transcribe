@@ -167,8 +167,17 @@ def process_file_in_background(task_id, file_path, notes, not_swedish, include_n
         with open(md_path, 'w', encoding='utf-8') as f:
             f.write(final_content)
 
-        # Generate PDF using md-to-pdf via npx
-        subprocess.run(['npx', '-y', 'md-to-pdf', md_path], check=True)
+        # Generate PDF using pandoc with eisvogel template
+        title = summary_text.split('\n', 1)[0].lstrip('# ').strip() or output_basename
+        subprocess.run([
+            'pandoc',
+            'template.md',
+            md_path,
+            '-o', pdf_path,
+            '--template', 'eisvogel',
+            '--metadata', f'title={title}',
+            '--metadata', f'date={datetime.date.today().isoformat()}',
+        ], check=True)
 
         tasks[task_id]['status'] = 'Completed'
         tasks[task_id]['result_file_md'] = md_path

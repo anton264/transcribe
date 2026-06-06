@@ -8,39 +8,20 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     curl \
-    && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
-    && apt-get install -y --no-install-recommends nodejs \
+    pandoc \
+    texlive-latex-recommended \
+    texlive-latex-extra \
+    texlive-fonts-recommended \
+    texlive-fonts-extra \
+    texlive-xetex \
+    wget \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# ── Chromium dependencies for md-to-pdf (Puppeteer) ─────────────────────────
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    chromium \
-    fonts-liberation \
-    libappindicator3-1 \
-    libatk-bridge2.0-0 \
-    libatk1.0-0 \
-    libcups2 \
-    libdbus-1-3 \
-    libdrm2 \
-    libgbm1 \
-    libgtk-3-0 \
-    libnspr4 \
-    libnss3 \
-    libx11-xcb1 \
-    libxcomposite1 \
-    libxdamage1 \
-    libxrandr2 \
-    xdg-utils \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
-# Tell Puppeteer to use the system Chromium instead of downloading its own
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
-
-# Pre-install md-to-pdf globally so npx doesn't re-download each time
-RUN npm install -g md-to-pdf
+# ── Install Eisvogel pandoc LaTeX template ───────────────────────────────────
+RUN mkdir -p /usr/share/pandoc/data/templates \
+    && wget -qO /usr/share/pandoc/data/templates/eisvogel.latex \
+       https://raw.githubusercontent.com/Wandmalfarbe/pandoc-latex-template/master/eisvogel.tex
 
 # ── Working directory ────────────────────────────────────────────────────────
 WORKDIR /app
