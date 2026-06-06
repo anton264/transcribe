@@ -76,7 +76,7 @@ def _scan_output_files():
     return files
 
 
-def process_file_in_background(task_id, file_path, notes, not_swedish):
+def process_file_in_background(task_id, file_path, notes, not_swedish, include_notes=True, include_transcription=True):
     try:
         # Check cancellation before each step
         if tasks[task_id].get('cancelled'):
@@ -143,15 +143,21 @@ def process_file_in_background(task_id, file_path, notes, not_swedish):
         tasks[task_id]['status'] = 'Generating documents...'
 
         # Combine transcript and summary in the md file
-        final_content = (
-            f"{summary_text}\n\n"
-            "---\n"
-            "# Original Notes\n\n"
-            f"{notes}\n\n"
-            "---\n"
-            "# Full Transcription\n\n"
-            f"{transcription_text}\n"
-        )
+        final_content = f"{summary_text}\n\n"
+
+        if include_notes and notes.strip():
+            final_content += (
+                "---\n"
+                "# Original Notes\n\n"
+                f"{notes}\n\n"
+            )
+
+        if include_transcription:
+            final_content += (
+                "---\n"
+                "# Full Transcription\n\n"
+                f"{transcription_text}\n"
+            )
 
         with open(md_path, 'w', encoding='utf-8') as f:
             f.write(final_content)
@@ -189,7 +195,9 @@ def upload_file():
         return jsonify({'error': 'No selected file'}), 400
 
     notes = request.form.get('notes', '')
-    not_swedish = request.form.get('not_swedish') == 'true'
+    not_swedish = 'not_swedish' in request.form
+    include_notes = 'include_notes' in request.form
+    include_transcription = 'include_transcription' in request.form
 
     task_id = str(uuid.uuid4())
     original_filename = file.filename
@@ -211,7 +219,7 @@ def upload_file():
     # Start background thread
     thread = threading.Thread(
         target=process_file_in_background,
-        args=(task_id, file_path, notes, not_swedish)
+        args=(task_id, file_path, notes, not_swedish, include_notes, include_transcription)
     )
     thread.start()
 
@@ -333,4 +341,4 @@ def download_pdf(task_id):
 
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5001)
+    app.run(debug=True, host='0.0.0.0', port=5001)

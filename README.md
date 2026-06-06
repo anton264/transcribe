@@ -33,6 +33,46 @@ python process_audio.py <path_to_audio_file>
 
 The script will automatically detect and use hardware acceleration if available (CUDA for NVIDIA GPUs or MPS for Apple Silicon), falling back to the CPU otherwise. Using a GPU significantly decreases transcription time.
 
+## Running with Docker
+
+### Build the image
+
+```bash
+docker build -t transcribe .
+```
+
+### Run with GPU support (NVIDIA)
+
+```bash
+docker run --gpus all -p 5001:5001 \
+  -v $(pwd)/outputs:/app/outputs \
+  -v $(pwd)/uploads:/app/uploads \
+  -v $(pwd)/cache:/app/cache \
+  transcribe
+```
+
+### Run without GPU (CPU-only)
+
+> **Note:** CPU transcription is disabled by default in `process_audio.py`. Remove the GPU check or adjust the code if you want CPU fallback.
+
+```bash
+docker run -p 5001:5001 \
+  -v $(pwd)/outputs:/app/outputs \
+  -v $(pwd)/uploads:/app/uploads \
+  -v $(pwd)/cache:/app/cache \
+  transcribe
+```
+
+The app will be available at `http://localhost:5001`.
+
+### Volume mounts
+
+| Mount | Purpose |
+|-------|---------|
+| `outputs/` | Generated markdown and PDF files |
+| `uploads/` | Uploaded audio files |
+| `cache/` | Hugging Face model cache (avoids re-downloading) |
+
 ## Pandoc conversion
 
 ```sh

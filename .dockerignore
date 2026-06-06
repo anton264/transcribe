@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+cache/
+outputs/
+uploads/
+*.mp3
+*.m4a
+*.wav
+*.mp4
+*.qta
+*.pdf
+.git/
+.gitignore
