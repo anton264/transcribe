@@ -6,3 +6,4 @@ soundfile
 pydub
 datasets
 google-antigravity
+flask
