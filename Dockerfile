@@ -1,5 +1,5 @@
 # ── Base image with CUDA support for GPU transcription ────────────────────────
-FROM pytorch/pytorch:2.6.0-cuda12.6-cudnn9-runtime
+FROM docker.io/pytorch/pytorch:2.6.0-cuda12.6-cudnn9-runtime
 
 # Avoid interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive

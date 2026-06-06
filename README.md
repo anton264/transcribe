@@ -33,18 +33,18 @@ python process_audio.py <path_to_audio_file>
 
 The script will automatically detect and use hardware acceleration if available (CUDA for NVIDIA GPUs or MPS for Apple Silicon), falling back to the CPU otherwise. Using a GPU significantly decreases transcription time.
 
-## Running with Docker
+## Running with podman
 
 ### Build the image
 
 ```bash
-docker build -t transcribe .
+podman build -t transcribe .
 ```
 
 ### Run with GPU support (NVIDIA)
 
 ```bash
-docker run --gpus all -p 5001:5001 \
+podman run --gpus all -p 8001:5001 \
   -v $(pwd)/outputs:/app/outputs \
   -v $(pwd)/uploads:/app/uploads \
   -v $(pwd)/cache:/app/cache \
@@ -56,7 +56,7 @@ docker run --gpus all -p 5001:5001 \
 > **Note:** CPU transcription is disabled by default in `process_audio.py`. Remove the GPU check or adjust the code if you want CPU fallback.
 
 ```bash
-docker run -p 5001:5001 \
+podman run -p 5001:5001 \
   -v $(pwd)/outputs:/app/outputs \
   -v $(pwd)/uploads:/app/uploads \
   -v $(pwd)/cache:/app/cache \
@@ -76,4 +76,4 @@ The app will be available at `http://localhost:5001`.
 ## Pandoc conversion
 
 ```sh
-podman run --rm --volume "$(pwd):/data:Z" --userns=keep-id docker.io/pandoc/extra template.md -o example.pdf --template eisvogel --syntax-highlighting idiomatic
+podman run --rm --volume "$(pwd):/data:Z" --userns=keep-id podman.io/pandoc/extra template.md -o example.pdf --template eisvogel --syntax-highlighting idiomatic
