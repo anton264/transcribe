@@ -1,5 +1,5 @@
 # ── Base image with CUDA support for GPU transcription ────────────────────────
-FROM docker.io/pytorch/pytorch:2.7.0-cuda12.8-cudnn9-runtime
+FROM docker.io/pytorch/pytorch:2.12.0-cuda13.2-cudnn9-runtime
 
 # Avoid interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
@@ -18,7 +18,7 @@ WORKDIR /app
 
 # ── Python dependencies ─────────────────────────────────────────────────────
 COPY requirements.txt .
-RUN pip install --no-cache-dir flask -r requirements.txt
+RUN pip install --break-system-packages --no-cache-dir flask -r requirements.txt
 
 # ── Application code ────────────────────────────────────────────────────────
 COPY . .
