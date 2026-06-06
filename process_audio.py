@@ -39,7 +39,7 @@ def transcribe_audio(file_path, output_md_path, not_swedish=False):
     if not_swedish:
         model_id = "openai/whisper-large-v3"
     else:
-        model_id = "KBLab/kb-whisper-tiny"
+        model_id = "KBLab/kb-whisper-large"
 
     model = AutoModelForSpeechSeq2Seq.from_pretrained(
         model_id, torch_dtype=torch_dtype, use_safetensors=True, cache_dir="cache"
