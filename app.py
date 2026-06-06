@@ -175,6 +175,7 @@ def process_file_in_background(task_id, file_path, notes, not_swedish, include_n
             md_path,
             '-o', pdf_path,
             '--template', 'eisvogel',
+            '--pdf-engine', 'xelatex',
             '--metadata', f'title={title}',
             '--metadata', f'date={datetime.date.today().isoformat()}',
         ], check=True)

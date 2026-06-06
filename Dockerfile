@@ -14,14 +14,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     texlive-fonts-recommended \
     texlive-fonts-extra \
     texlive-xetex \
-    wget \
+    lmodern \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 # ── Install Eisvogel pandoc LaTeX template ───────────────────────────────────
 RUN mkdir -p /usr/share/pandoc/data/templates \
-    && wget -qO /usr/share/pandoc/data/templates/eisvogel.latex \
-       https://raw.githubusercontent.com/Wandmalfarbe/pandoc-latex-template/master/eisvogel.tex
+    && curl -fsSL -L https://github.com/Wandmalfarbe/pandoc-latex-template/releases/download/v3.4.0/Eisvogel-3.4.0.tar.gz \
+       | tar xz --strip-components=1 -C /usr/share/pandoc/data/templates/ Eisvogel-3.4.0/eisvogel.latex
 
 # ── Working directory ────────────────────────────────────────────────────────
 WORKDIR /app
