@@ -45,6 +45,7 @@ podman build -t transcribe .
 
 ```bash
 podman run --gpus all -p 8001:5001 \
+  -e GEMINI_API_KEY \
   -v $(pwd)/outputs:/app/outputs \
   -v $(pwd)/uploads:/app/uploads \
   -v $(pwd)/cache:/app/cache \
