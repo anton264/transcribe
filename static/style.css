@@ -9,7 +9,12 @@
     --accent-gradient: linear-gradient(135deg, #3b82f6, #8b5cf6);
     --success-color: #10b981;
     --error-color: #ef4444;
+    --warning-color: #f59e0b;
     --input-bg: rgba(15, 23, 42, 0.6);
+    --card-bg: rgba(15, 23, 42, 0.4);
+    --card-hover-bg: rgba(30, 41, 59, 0.8);
+    --danger-color: #ef4444;
+    --danger-hover: #dc2626;
 }
 
 * {
@@ -23,16 +28,13 @@ body {
     background-color: var(--bg-color);
     color: var(--text-primary);
     min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
     overflow-x: hidden;
     position: relative;
 }
 
 /* Background Animated Orbs */
 .background-orbs {
-    position: absolute;
+    position: fixed;
     top: 0;
     left: 0;
     width: 100%;
@@ -81,20 +83,38 @@ body {
     100% { transform: translate(30px, 50px) scale(1.1); }
 }
 
-.container {
-    width: 100%;
-    max-width: 600px;
+/* ─── App Layout ─────────────────────────────────────────────────────────── */
+
+.app-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
     padding: 2rem;
-    z-index: 1;
+    min-height: 100vh;
+    align-content: start;
+}
+
+.column {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.column-upload {
+    position: sticky;
+    top: 2rem;
+    align-self: start;
 }
 
 header {
     text-align: center;
-    margin-bottom: 2.5rem;
+    margin-bottom: 0.5rem;
 }
 
 .gradient-text {
-    font-size: 2.5rem;
+    font-size: 2.2rem;
     font-weight: 800;
     background: var(--accent-gradient);
     -webkit-background-clip: text;
@@ -104,20 +124,58 @@ header {
 
 header p {
     color: var(--text-secondary);
-    font-size: 1.1rem;
+    font-size: 1.05rem;
 }
 
-/* Glassmorphism Panel */
+/* ─── Glassmorphism Panel ────────────────────────────────────────────────── */
+
 .glass-panel {
     background: var(--panel-bg);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid var(--panel-border);
     border-radius: 20px;
-    padding: 2rem;
+    padding: 1.75rem;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
     transition: all 0.3s ease;
 }
+
+/* ─── Panel Headers ──────────────────────────────────────────────────────── */
+
+.panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+}
+
+.panel-header h2 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.panel-icon {
+    font-size: 1.3rem;
+}
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 28px;
+    padding: 0 8px;
+    border-radius: 14px;
+    background: var(--accent-gradient);
+    color: white;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+/* ─── Form Elements ──────────────────────────────────────────────────────── */
 
 .form-group {
     margin-bottom: 1.5rem;
@@ -137,7 +195,7 @@ header p {
     align-items: center;
     justify-content: center;
     width: 100%;
-    height: 150px;
+    height: 130px;
     border: 2px dashed var(--accent-primary);
     border-radius: 12px;
     background: var(--input-bg);
@@ -152,7 +210,7 @@ header p {
 }
 
 .file-message {
-    font-size: 1rem;
+    font-size: 0.95rem;
     color: var(--text-secondary);
     text-align: center;
     padding: 0 20px;
@@ -207,16 +265,17 @@ textarea:focus {
     cursor: pointer;
 }
 
-/* Buttons */
+/* ─── Buttons ────────────────────────────────────────────────────────────── */
+
 .btn {
     display: flex;
     justify-content: center;
     align-items: center;
     width: 100%;
-    padding: 1rem;
+    padding: 0.9rem;
     border: none;
     border-radius: 12px;
-    font-size: 1.1rem;
+    font-size: 1.05rem;
     font-weight: 600;
     font-family: inherit;
     cursor: pointer;
@@ -248,14 +307,15 @@ textarea:focus {
 .success-btn {
     background: var(--success-color);
     color: white;
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
 }
 
 .success-btn:hover {
     background: #059669;
 }
 
-/* Status Section */
+/* ─── Status Section ─────────────────────────────────────────────────────── */
+
 .hidden {
     display: none !important;
 }
@@ -332,4 +392,361 @@ textarea:focus {
     border-radius: 50%;
     border-top-color: white;
     animation: spin 1s ease-in-out infinite;
+}
+
+/* ─── Queue Cards ────────────────────────────────────────────────────────── */
+
+.queue-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-height: 300px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent-primary) transparent;
+}
+
+.queue-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    background: var(--card-bg);
+    border: 1px solid var(--panel-border);
+    border-radius: 14px;
+    transition: all 0.3s ease;
+    animation: slideIn 0.3s ease;
+}
+
+.queue-card:hover {
+    background: var(--card-hover-bg);
+    border-color: rgba(255, 255, 255, 0.15);
+    transform: translateX(4px);
+}
+
+.queue-card-pulse {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--accent-primary);
+    flex-shrink: 0;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+}
+
+.queue-card-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.queue-card-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.queue-card-status {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+
+.queue-cancel-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 8px;
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--danger-color);
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.queue-cancel-btn:hover {
+    background: rgba(239, 68, 68, 0.3);
+    transform: scale(1.1);
+}
+
+/* ─── File List ──────────────────────────────────────────────────────────── */
+
+.files-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 500px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent-primary) transparent;
+}
+
+.file-row {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    background: var(--card-bg);
+    border: 1px solid var(--panel-border);
+    border-radius: 14px;
+    transition: all 0.3s ease;
+    animation: slideIn 0.3s ease;
+}
+
+.file-row:hover {
+    background: var(--card-hover-bg);
+    border-color: rgba(255, 255, 255, 0.15);
+    transform: translateX(4px);
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.file-info {
+    min-width: 0;
+}
+
+.file-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.file-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 3px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.file-date {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.file-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.file-download-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.4rem 0.75rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    color: white;
+}
+
+.file-download-btn.md-btn {
+    background: rgba(59, 130, 246, 0.2);
+    color: var(--accent-primary);
+}
+
+.file-download-btn.md-btn:hover {
+    background: rgba(59, 130, 246, 0.35);
+    transform: translateY(-1px);
+}
+
+.file-download-btn.pdf-btn {
+    background: rgba(139, 92, 246, 0.2);
+    color: var(--accent-secondary);
+}
+
+.file-download-btn.pdf-btn:hover {
+    background: rgba(139, 92, 246, 0.35);
+    transform: translateY(-1px);
+}
+
+.file-delete-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 8px;
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--danger-color);
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.file-delete-btn:hover {
+    background: rgba(239, 68, 68, 0.25);
+    transform: scale(1.1);
+}
+
+/* ─── Empty State ────────────────────────────────────────────────────────── */
+
+.empty-state {
+    text-align: center;
+    padding: 2rem 1rem;
+}
+
+.empty-state p {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+}
+
+/* ─── Confirm Dialog ─────────────────────────────────────────────────────── */
+
+.confirm-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.confirm-dialog {
+    background: var(--bg-color);
+    border: 1px solid var(--panel-border);
+    border-radius: 20px;
+    padding: 2rem;
+    max-width: 380px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+    animation: scaleIn 0.2s ease;
+}
+
+@keyframes scaleIn {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+.confirm-dialog h3 {
+    margin-bottom: 0.75rem;
+    font-size: 1.3rem;
+}
+
+.confirm-dialog p {
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+    font-size: 0.95rem;
+}
+
+.confirm-buttons {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.confirm-buttons .btn {
+    flex: 1;
+    padding: 0.75rem;
+    font-size: 0.95rem;
+}
+
+.danger-btn {
+    background: var(--danger-color);
+    color: white;
+}
+
+.danger-btn:hover {
+    background: var(--danger-hover);
+}
+
+/* ─── File row fade-out animation ────────────────────────────────────────── */
+
+.file-row.removing, .queue-card.removing {
+    animation: slideOut 0.3s ease forwards;
+}
+
+@keyframes slideOut {
+    to {
+        opacity: 0;
+        transform: translateX(30px);
+        height: 0;
+        padding: 0;
+        margin: 0;
+        overflow: hidden;
+    }
+}
+
+/* ─── Scrollbar styling for WebKit ───────────────────────────────────────── */
+
+.queue-list::-webkit-scrollbar,
+.files-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.queue-list::-webkit-scrollbar-track,
+.files-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.queue-list::-webkit-scrollbar-thumb,
+.files-list::-webkit-scrollbar-thumb {
+    background: rgba(59, 130, 246, 0.3);
+    border-radius: 3px;
+}
+
+.queue-list::-webkit-scrollbar-thumb:hover,
+.files-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(59, 130, 246, 0.5);
+}
+
+/* ─── Responsive ─────────────────────────────────────────────────────────── */
+
+@media (max-width: 900px) {
+    .app-layout {
+        grid-template-columns: 1fr;
+        padding: 1.5rem;
+    }
+
+    .column-upload {
+        position: static;
+    }
+
+    .gradient-text {
+        font-size: 1.8rem;
+    }
 }

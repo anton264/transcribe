@@ -17,61 +17,99 @@
         <div class="orb orb-3"></div>
     </div>
 
-    <main class="container">
-        <header>
-            <h1 class="gradient-text">Transcribe & Summarize</h1>
-            <p>Upload your audio file and let our AI do the heavy lifting.</p>
-        </header>
+    <main class="app-layout">
+        <!-- Left column: Upload + Status -->
+        <div class="column column-upload">
+            <header>
+                <h1 class="gradient-text">Transcribe & Summarize</h1>
+                <p>Upload your audio file and let our AI do the heavy lifting.</p>
+            </header>
 
-        <section class="glass-panel" id="upload-section">
-            <form id="upload-form">
-                <div class="form-group file-drop-area" id="file-drop-area">
-                    <span class="file-message">Drag & drop your audio file here or click to browse</span>
-                    <input type="file" id="audio_file" name="audio_file" accept="audio/*, .mp3, .wav, .m4a" required>
+            <section class="glass-panel" id="upload-section">
+                <form id="upload-form">
+                    <div class="form-group file-drop-area" id="file-drop-area">
+                        <span class="file-message">Drag & drop your audio file here or click to browse</span>
+                        <input type="file" id="audio_file" name="audio_file" accept="audio/*, .mp3, .wav, .m4a" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="notes">Description & Notes</label>
+                        <textarea id="notes" name="notes" placeholder="What is this file about? Add any context or notes here..." rows="4"></textarea>
+                    </div>
+
+                    <div class="form-group checkbox-group">
+                        <input type="checkbox" id="not_swedish" name="not_swedish">
+                        <label for="not_swedish">Audio is NOT in Swedish (Use general Whisper model)</label>
+                    </div>
+
+                    <button type="submit" class="btn primary-btn" id="submit-btn">
+                        <span>Process Audio</span>
+                        <div class="spinner hidden" id="btn-spinner"></div>
+                    </button>
+                </form>
+            </section>
+
+            <section class="glass-panel hidden" id="status-section">
+                <h2>Processing Details</h2>
+                <div class="status-container">
+                    <div class="status-indicator">
+                        <div class="pulse-ring"></div>
+                    </div>
+                    <p id="status-text">Uploading...</p>
                 </div>
-
-                <div class="form-group">
-                    <label for="notes">Description & Notes</label>
-                    <textarea id="notes" name="notes" placeholder="What is this file about? Add any context or notes here..." rows="4"></textarea>
+                
+                <div id="result-container" class="hidden">
+                    <div class="success-icon">✓</div>
+                    <h3>All Done!</h3>
+                    <p>Your transcription and summary are ready.</p>
+                    <a href="#" id="download-md-btn" class="btn success-btn">Download (.md)</a>
+                    <a href="#" id="download-pdf-btn" class="btn success-btn">Download (.pdf)</a>
+                    <button id="reset-btn" class="btn secondary-btn">Process Another File</button>
                 </div>
-
-                <div class="form-group checkbox-group">
-                    <input type="checkbox" id="not_swedish" name="not_swedish">
-                    <label for="not_swedish">Audio is NOT in Swedish (Use general Whisper model)</label>
+                
+                <div id="error-container" class="hidden">
+                    <div class="error-icon">✕</div>
+                    <h3>Error</h3>
+                    <p id="error-text">Something went wrong.</p>
+                    <button id="retry-btn" class="btn secondary-btn">Try Again</button>
                 </div>
+            </section>
+        </div>
 
-                <button type="submit" class="btn primary-btn" id="submit-btn">
-                    <span>Process Audio</span>
-                    <div class="spinner hidden" id="btn-spinner"></div>
-                </button>
-            </form>
-        </section>
-
-        <section class="glass-panel hidden" id="status-section">
-            <h2>Processing Details</h2>
-            <div class="status-container">
-                <div class="status-indicator">
-                    <div class="pulse-ring"></div>
+        <!-- Right column: Queue + Files -->
+        <div class="column column-files">
+            <!-- Queue Panel -->
+            <section class="glass-panel" id="queue-section">
+                <div class="panel-header">
+                    <h2>
+                        <span class="panel-icon">⏳</span>
+                        Processing Queue
+                    </h2>
+                    <span class="badge" id="queue-count">0</span>
                 </div>
-                <p id="status-text">Uploading...</p>
-            </div>
-            
-            <div id="result-container" class="hidden">
-                <div class="success-icon">✓</div>
-                <h3>All Done!</h3>
-                <p>Your transcription and summary are ready.</p>
-                <a href="#" id="download-md-btn" class="btn success-btn">Download (.md)</a>
-                <a href="#" id="download-pdf-btn" class="btn success-btn">Download (.pdf)</a>
-                <button id="reset-btn" class="btn secondary-btn">Process Another File</button>
-            </div>
-            
-            <div id="error-container" class="hidden">
-                <div class="error-icon">✕</div>
-                <h3>Error</h3>
-                <p id="error-text">Something went wrong.</p>
-                <button id="retry-btn" class="btn secondary-btn">Try Again</button>
-            </div>
-        </section>
+                <div id="queue-list" class="queue-list">
+                    <div class="empty-state" id="queue-empty">
+                        <p>No files in the queue</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Files Panel -->
+            <section class="glass-panel" id="files-section">
+                <div class="panel-header">
+                    <h2>
+                        <span class="panel-icon">📄</span>
+                        Generated Documents
+                    </h2>
+                    <span class="badge" id="files-count">0</span>
+                </div>
+                <div id="files-list" class="files-list">
+                    <div class="empty-state" id="files-empty">
+                        <p>No documents yet. Upload an audio file to get started!</p>
+                    </div>
+                </div>
+            </section>
+        </div>
     </main>
 
     <script src="/static/script.js"></script>
