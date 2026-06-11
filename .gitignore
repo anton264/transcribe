@@ -9,3 +9,4 @@
 *.mp4
 cache/
 .venv/
+__pycache__/
