@@ -1,12 +1,25 @@
+# Audio/video files
 *.mp3
-!README.md
-!template.md
-*.md
 *.m4a
-*.qta
 *.wav
-*.pdf
 *.mp4
-cache/
+
+# Documents
+*.pdf
+*.odt
+*.qta
+
+# Python
 .venv/
 __pycache__/
+
+# App runtime
+cache/
+uploads/
+outputs/
+
+# Agent/tooling
+.agents/
+graphify-out/
+skills-lock.json
+__pycache__/process_audio.cpython-314.pyc

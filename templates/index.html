@@ -17,7 +17,8 @@
         <div class="orb orb-3"></div>
     </div>
 
-    <main class="app-layout">
+    <!-- Main two-column layout -->
+    <main class="app-layout" id="main-layout">
         <!-- Left column: Upload + Status -->
         <div class="column column-upload">
             <header>
@@ -76,6 +77,14 @@
                     <a href="#" id="download-pdf-btn" class="btn success-btn">Download (.pdf)</a>
                     <button id="reset-btn" class="btn secondary-btn">Process Another File</button>
                 </div>
+
+                <div id="review-ready-container" class="hidden">
+                    <div class="success-icon">📝</div>
+                    <h3>Summary Ready for Review</h3>
+                    <p>Your markdown has been generated. Review and edit before creating the PDF.</p>
+                    <button id="open-editor-btn" class="btn primary-btn">Open Editor</button>
+                    <button id="skip-edit-btn" class="btn secondary-btn" style="margin-top: 0.75rem;">Skip & Generate PDF</button>
+                </div>
                 
                 <div id="error-container" class="hidden">
                     <div class="error-icon">✕</div>
@@ -122,6 +131,30 @@
         </div>
     </main>
 
+    <!-- Full-width Markdown Editor (hidden by default) -->
+    <div class="editor-layout hidden" id="editor-layout">
+        <div class="editor-toolbar">
+            <button id="editor-back-btn" class="btn secondary-btn editor-toolbar-btn">← Back</button>
+            <h2 class="editor-title" id="editor-title">Editing Document</h2>
+            <div class="editor-toolbar-actions">
+                <span class="save-indicator hidden" id="save-indicator">✓ Saved</span>
+                <button id="editor-save-btn" class="btn secondary-btn editor-toolbar-btn">Save</button>
+                <button id="editor-generate-pdf-btn" class="btn primary-btn editor-toolbar-btn">Generate PDF</button>
+            </div>
+        </div>
+        <div class="editor-panes">
+            <div class="editor-pane editor-input-pane">
+                <div class="editor-pane-header">Markdown</div>
+                <textarea id="md-editor" class="md-editor-textarea" spellcheck="false"></textarea>
+            </div>
+            <div class="editor-pane editor-preview-pane">
+                <div class="editor-pane-header">Preview</div>
+                <div id="md-preview" class="md-preview-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="/static/script.js"></script>
 </body>
 </html>

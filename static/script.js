@@ -13,12 +13,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const statusContainer = document.querySelector('.status-container');
     const statusText = document.getElementById('status-text');
     const resultContainer = document.getElementById('result-container');
+    const reviewReadyContainer = document.getElementById('review-ready-container');
     const errorContainer = document.getElementById('error-container');
     const errorText = document.getElementById('error-text');
     const downloadMdBtn = document.getElementById('download-md-btn');
     const downloadPdfBtn = document.getElementById('download-pdf-btn');
     const resetBtn = document.getElementById('reset-btn');
     const retryBtn = document.getElementById('retry-btn');
+    const openEditorBtn = document.getElementById('open-editor-btn');
+    const skipEditBtn = document.getElementById('skip-edit-btn');
 
     // ─── Queue & Files Elements ──────────────────────────────────────────
     const queueList = document.getElementById('queue-list');
@@ -28,9 +31,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const filesEmpty = document.getElementById('files-empty');
     const filesCount = document.getElementById('files-count');
 
+    // ─── Editor Elements ─────────────────────────────────────────────────
+    const mainLayout = document.getElementById('main-layout');
+    const editorLayout = document.getElementById('editor-layout');
+    const editorBackBtn = document.getElementById('editor-back-btn');
+    const editorTitle = document.getElementById('editor-title');
+    const editorSaveBtn = document.getElementById('editor-save-btn');
+    const editorGeneratePdfBtn = document.getElementById('editor-generate-pdf-btn');
+    const mdEditor = document.getElementById('md-editor');
+    const mdPreview = document.getElementById('md-preview');
+    const saveIndicator = document.getElementById('save-indicator');
+
     let currentTaskId = null;
+    let currentEditFilename = null;
+    let editorReturnTo = 'main'; // 'main' or 'status'
     let pollInterval = null;
     let queuePollInterval = null;
+    let previewDebounceTimer = null;
 
     // ─── File Drag & Drop ────────────────────────────────────────────────
 
@@ -113,6 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
             statusSection.classList.remove('hidden');
             statusContainer.classList.remove('hidden');
             resultContainer.classList.add('hidden');
+            reviewReadyContainer.classList.add('hidden');
             errorContainer.classList.add('hidden');
 
             // Start polling task status
@@ -143,10 +161,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (data.status === 'Completed') {
                 clearInterval(pollInterval);
-                showSuccess();
+                showSuccess(data);
                 fetchFiles();
                 fetchQueue();
-            } else if (data.status === 'Error') {
+            } else if (data.status === 'Review Ready') {
+                clearInterval(pollInterval);
+                showReviewReady(data);
+                fetchFiles();
+                fetchQueue();
+            } else if (data.status === 'Error' || data.status === 'PDF Error') {
                 clearInterval(pollInterval);
                 showError(data.error || 'An unknown error occurred during processing.');
                 fetchQueue();
@@ -162,17 +185,36 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function showSuccess() {
+    function showSuccess(data) {
         statusContainer.classList.add('hidden');
+        reviewReadyContainer.classList.add('hidden');
         resultContainer.classList.remove('hidden');
-        downloadMdBtn.href = `/download/md/${currentTaskId}`;
-        downloadPdfBtn.href = `/download/pdf/${currentTaskId}`;
+        if (data && data.output_basename) {
+            downloadMdBtn.href = `/download/${encodeURIComponent(data.output_basename)}.md`;
+            downloadPdfBtn.href = `/download/${encodeURIComponent(data.output_basename)}.pdf`;
+        } else {
+            downloadMdBtn.href = `/download/md/${currentTaskId}`;
+            downloadPdfBtn.href = `/download/pdf/${currentTaskId}`;
+        }
+    }
+
+    function showReviewReady(data) {
+        statusContainer.classList.add('hidden');
+        resultContainer.classList.add('hidden');
+        errorContainer.classList.add('hidden');
+        reviewReadyContainer.classList.remove('hidden');
+
+        // Store the basename for editor
+        if (data && data.output_basename) {
+            reviewReadyContainer.dataset.filename = data.output_basename;
+        }
     }
 
     function showError(message) {
         statusContainer.classList.add('hidden');
         uploadSection.classList.add('hidden');
         statusSection.classList.remove('hidden');
+        reviewReadyContainer.classList.add('hidden');
         errorContainer.classList.remove('hidden');
         errorText.textContent = message;
     }
@@ -187,6 +229,7 @@ document.addEventListener('DOMContentLoaded', () => {
         uploadSection.classList.remove('hidden');
         statusSection.classList.add('hidden');
         resultContainer.classList.add('hidden');
+        reviewReadyContainer.classList.add('hidden');
         errorContainer.classList.add('hidden');
     }
 
@@ -199,6 +242,164 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         resetApp();
     });
+
+    // ─── Review Ready Handlers ───────────────────────────────────────────
+
+    openEditorBtn.addEventListener('click', () => {
+        const filename = reviewReadyContainer.dataset.filename;
+        if (filename) {
+            editorReturnTo = 'status';
+            openEditor(filename);
+        }
+    });
+
+    skipEditBtn.addEventListener('click', async () => {
+        const filename = reviewReadyContainer.dataset.filename;
+        if (filename) {
+            await triggerPdfGeneration(filename);
+        }
+    });
+
+    // ─── Markdown Editor ─────────────────────────────────────────────────
+
+    async function openEditor(filename) {
+        currentEditFilename = filename;
+
+        // Load content
+        try {
+            const response = await fetch(`/files/${encodeURIComponent(filename)}/content`);
+            if (!response.ok) throw new Error('Failed to load file');
+            const data = await response.json();
+
+            mdEditor.value = data.content;
+            editorTitle.textContent = `Editing: ${filename}`;
+            updatePreview();
+
+            // Show editor, hide main
+            mainLayout.classList.add('hidden');
+            editorLayout.classList.remove('hidden');
+            saveIndicator.classList.add('hidden');
+
+        } catch (error) {
+            console.error('Error loading file:', error);
+            showError('Failed to load file for editing.');
+        }
+    }
+
+    function closeEditor() {
+        editorLayout.classList.add('hidden');
+        mainLayout.classList.remove('hidden');
+        currentEditFilename = null;
+
+        // Refresh files list
+        fetchFiles();
+
+        if (editorReturnTo === 'status') {
+            // Check if task completed (PDF generated) while editing
+            if (currentTaskId) {
+                pollInterval = setInterval(checkStatus, 2000);
+                checkStatus();
+            }
+        }
+        editorReturnTo = 'main';
+    }
+
+    function updatePreview() {
+        if (typeof marked !== 'undefined') {
+            mdPreview.innerHTML = marked.parse(mdEditor.value);
+        } else {
+            // Fallback: show raw text
+            mdPreview.textContent = mdEditor.value;
+        }
+    }
+
+    // Live preview on typing (debounced)
+    mdEditor.addEventListener('input', () => {
+        clearTimeout(previewDebounceTimer);
+        previewDebounceTimer = setTimeout(updatePreview, 200);
+    });
+
+    // Save button
+    editorSaveBtn.addEventListener('click', async () => {
+        if (!currentEditFilename) return;
+
+        editorSaveBtn.disabled = true;
+        try {
+            const response = await fetch(`/files/${encodeURIComponent(currentEditFilename)}/content`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content: mdEditor.value }),
+            });
+
+            if (!response.ok) throw new Error('Save failed');
+
+            // Show saved indicator
+            saveIndicator.classList.remove('hidden');
+            setTimeout(() => saveIndicator.classList.add('hidden'), 2000);
+        } catch (error) {
+            console.error('Error saving:', error);
+        } finally {
+            editorSaveBtn.disabled = false;
+        }
+    });
+
+    // Generate PDF from editor
+    editorGeneratePdfBtn.addEventListener('click', async () => {
+        if (!currentEditFilename) return;
+
+        // Save first, then generate
+        editorGeneratePdfBtn.disabled = true;
+        editorGeneratePdfBtn.textContent = 'Saving & Generating...';
+
+        try {
+            // Save content
+            await fetch(`/files/${encodeURIComponent(currentEditFilename)}/content`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content: mdEditor.value }),
+            });
+
+            // Trigger PDF generation
+            await triggerPdfGeneration(currentEditFilename);
+
+            // Close editor, go back to status view
+            closeEditor();
+
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+        } finally {
+            editorGeneratePdfBtn.disabled = false;
+            editorGeneratePdfBtn.textContent = 'Generate PDF';
+        }
+    });
+
+    // Back button
+    editorBackBtn.addEventListener('click', closeEditor);
+
+    // ─── PDF Generation ──────────────────────────────────────────────────
+
+    async function triggerPdfGeneration(filename) {
+        try {
+            const response = await fetch(`/files/${encodeURIComponent(filename)}/convert`, {
+                method: 'POST',
+            });
+
+            if (!response.ok) throw new Error('Convert failed');
+
+            // If we have an active task, resume polling for completion
+            if (currentTaskId) {
+                statusContainer.classList.remove('hidden');
+                reviewReadyContainer.classList.add('hidden');
+                statusText.textContent = 'Generating PDF...';
+                pollInterval = setInterval(checkStatus, 2000);
+            }
+
+            fetchFiles();
+        } catch (error) {
+            console.error('Error triggering PDF generation:', error);
+            showError('Failed to start PDF generation.');
+        }
+    }
 
     // ─── Queue Management ────────────────────────────────────────────────
 
@@ -307,6 +508,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     <a href="/download/${encodeURIComponent(file.filename)}.pdf" class="file-download-btn pdf-btn" title="Download PDF">.pdf</a>
                 `;
             }
+            if (file.converting) {
+                downloadButtons += `
+                    <span class="file-converting-badge" title="Generating PDF...">⏳</span>
+                `;
+            }
 
             row.innerHTML = `
                 <div class="file-info">
@@ -317,10 +523,28 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>
                 <div class="file-actions">
+                    <button class="file-edit-btn" title="Edit markdown" data-filename="${escapeHtml(file.filename)}">✏️</button>
                     ${downloadButtons}
+                    ${!file.has_pdf && !file.converting ? `<button class="file-convert-btn" title="Generate PDF" data-filename="${escapeHtml(file.filename)}">📄→PDF</button>` : ''}
                 </div>
                 <button class="file-delete-btn" title="Delete file" data-filename="${escapeHtml(file.filename)}">🗑</button>
             `;
+
+            // Edit button
+            row.querySelector('.file-edit-btn').addEventListener('click', () => {
+                editorReturnTo = 'main';
+                openEditor(file.filename);
+            });
+
+            // Convert button (if present)
+            const convertBtn = row.querySelector('.file-convert-btn');
+            if (convertBtn) {
+                convertBtn.addEventListener('click', async () => {
+                    convertBtn.disabled = true;
+                    convertBtn.textContent = '⏳';
+                    await triggerPdfGeneration(file.filename);
+                });
+            }
 
             row.querySelector('.file-delete-btn').addEventListener('click', () => {
                 deleteFile(file.filename, file.display_name, row);

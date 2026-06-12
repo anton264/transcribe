@@ -65,6 +65,13 @@ def _scan_output_files():
             date_str = datetime.date.fromtimestamp(stat.st_mtime).isoformat()
             display_name = stem.replace('-', ' ').replace('_', ' ').title()
 
+        # Check if PDF is currently being generated
+        converting = False
+        for tid, task in tasks.items():
+            if task.get('output_basename') == stem and task.get('status') == 'Generating PDF...':
+                converting = True
+                break
+
         files.append({
             'filename': stem,
             'display_name': display_name,
@@ -72,6 +79,7 @@ def _scan_output_files():
             'size_bytes': stat.st_size,
             'has_md': True,
             'has_pdf': has_pdf,
+            'converting': converting,
         })
 
     # Sort newest first
@@ -145,7 +153,7 @@ def process_file_in_background(task_id, file_path, notes, not_swedish, include_n
             tasks[task_id]['status'] = 'Cancelled'
             return
 
-        tasks[task_id]['status'] = 'Generating documents...'
+        tasks[task_id]['status'] = 'Generating markdown...'
 
         # Combine transcript and summary in the md file
         final_content = f"{summary_text}\n\n"
@@ -167,22 +175,9 @@ def process_file_in_background(task_id, file_path, notes, not_swedish, include_n
         with open(md_path, 'w', encoding='utf-8') as f:
             f.write(final_content)
 
-        # Generate PDF using pandoc with eisvogel template
-        title = summary_text.split('\n', 1)[0].lstrip('# ').strip() or output_basename
-        subprocess.run([
-            'pandoc',
-            'template.md',
-            md_path,
-            '-o', pdf_path,
-            '--template', 'eisvogel',
-            '--pdf-engine', 'xelatex',
-            '--metadata', f'title={title}',
-            '--metadata', f'date={datetime.date.today().isoformat()}',
-        ], check=True)
-
-        tasks[task_id]['status'] = 'Completed'
+        # Stop here — user reviews/edits MD before PDF generation
+        tasks[task_id]['status'] = 'Review Ready'
         tasks[task_id]['result_file_md'] = md_path
-        tasks[task_id]['result_file_pdf'] = pdf_path
         tasks[task_id]['output_basename'] = output_basename
 
     except Exception as e:
@@ -288,6 +283,110 @@ def cancel_task(task_id):
 def list_files():
     """Return all completed output files."""
     return jsonify(_scan_output_files())
+
+
+@app.route('/files/<filename>/content', methods=['GET'])
+def get_file_content(filename):
+    """Return raw markdown content of a file."""
+    output_dir = app.config['OUTPUT_FOLDER']
+    safe_name = secure_filename(filename)
+    if not safe_name:
+        return jsonify({'error': 'Invalid filename'}), 400
+
+    md_path = os.path.join(output_dir, f"{safe_name}.md")
+    if not os.path.exists(md_path):
+        return jsonify({'error': 'File not found'}), 404
+
+    with open(md_path, 'r', encoding='utf-8') as f:
+        content = f.read()
+
+    return jsonify({'content': content, 'filename': safe_name})
+
+
+@app.route('/files/<filename>/content', methods=['PUT'])
+def save_file_content(filename):
+    """Save edited markdown content back to file."""
+    output_dir = app.config['OUTPUT_FOLDER']
+    safe_name = secure_filename(filename)
+    if not safe_name:
+        return jsonify({'error': 'Invalid filename'}), 400
+
+    md_path = os.path.join(output_dir, f"{safe_name}.md")
+    if not os.path.exists(md_path):
+        return jsonify({'error': 'File not found'}), 404
+
+    data = request.get_json()
+    if not data or 'content' not in data:
+        return jsonify({'error': 'No content provided'}), 400
+
+    with open(md_path, 'w', encoding='utf-8') as f:
+        f.write(data['content'])
+
+    return jsonify({'success': True})
+
+
+def _generate_pdf_background(filename):
+    """Generate PDF from an existing MD file in background."""
+    output_dir = app.config['OUTPUT_FOLDER']
+    safe_name = secure_filename(filename)
+    md_path = os.path.join(output_dir, f"{safe_name}.md")
+    pdf_path = os.path.join(output_dir, f"{safe_name}.pdf")
+
+    try:
+        # Read first line to extract title
+        with open(md_path, 'r', encoding='utf-8') as f:
+            first_line = f.readline().strip()
+        title = first_line.lstrip('# ').strip() or safe_name
+
+        subprocess.run([
+            'pandoc',
+            'template.md',
+            md_path,
+            '-o', pdf_path,
+            '--template', 'eisvogel',
+            '--pdf-engine', 'xelatex',
+            '--metadata', f'title={title}',
+            '--metadata', f'date={datetime.date.today().isoformat()}',
+        ], check=True)
+
+        # Update any task that references this file
+        for tid, task in tasks.items():
+            if task.get('output_basename') == safe_name:
+                task['status'] = 'Completed'
+                task['result_file_pdf'] = pdf_path
+
+    except Exception as e:
+        print(f"PDF generation failed for {safe_name}: {e}")
+        for tid, task in tasks.items():
+            if task.get('output_basename') == safe_name:
+                task['status'] = 'PDF Error'
+                task['error'] = str(e)
+
+
+@app.route('/files/<filename>/convert', methods=['POST'])
+def convert_file(filename):
+    """Trigger PDF generation from an existing MD file."""
+    output_dir = app.config['OUTPUT_FOLDER']
+    safe_name = secure_filename(filename)
+    if not safe_name:
+        return jsonify({'error': 'Invalid filename'}), 400
+
+    md_path = os.path.join(output_dir, f"{safe_name}.md")
+    if not os.path.exists(md_path):
+        return jsonify({'error': 'File not found'}), 404
+
+    # Mark any related task as converting
+    for tid, task in tasks.items():
+        if task.get('output_basename') == safe_name:
+            task['status'] = 'Generating PDF...'
+
+    thread = threading.Thread(
+        target=_generate_pdf_background,
+        args=(filename,)
+    )
+    thread.start()
+
+    return jsonify({'success': True})
 
 
 @app.route('/files/<filename>', methods=['DELETE'])
