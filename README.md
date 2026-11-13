@@ -35,21 +35,41 @@ The script will automatically detect and use hardware acceleration if available 
 
 ## Running with podman
 
-### Build the image
+A prebuilt image is published to the GitHub Container Registry on every push to the `web` branch:
+
+```
+ghcr.io/anton264/transcribe:latest
+```
+
+Available tags:
+
+| Tag | Description |
+|-----|-------------|
+| `latest` / `web` | Latest build of the `web` branch |
+| `sha-<commit>` | A specific commit |
+| `<version>` | Release tags (`v1.2.3` → `1.2.3`) |
+
+The image is built for `linux/amd64` only.
+
+### Pull the image
 
 ```bash
-podman build -t transcribe .
+podman pull ghcr.io/anton264/transcribe:latest
 ```
 
 ### Run with GPU support (NVIDIA)
 
+Requires the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) with CDI configured.
+
 ```bash
-podman run --gpus all -p 8001:5001 \
+mkdir -p outputs uploads cache
+
+podman run --rm --device nvidia.com/gpu=all -p 5001:5001 \
   -e GEMINI_API_KEY \
-  -v $(pwd)/outputs:/app/outputs \
-  -v $(pwd)/uploads:/app/uploads \
-  -v $(pwd)/cache:/app/cache \
-  transcribe
+  -v $(pwd)/outputs:/app/outputs:Z \
+  -v $(pwd)/uploads:/app/uploads:Z \
+  -v $(pwd)/cache:/app/cache:Z \
+  ghcr.io/anton264/transcribe:latest
 ```
 
 ### Run without GPU (CPU-only)
@@ -57,11 +77,12 @@ podman run --gpus all -p 8001:5001 \
 > **Note:** CPU transcription is disabled by default in `process_audio.py`. Remove the GPU check or adjust the code if you want CPU fallback.
 
 ```bash
-podman run -p 5001:5001 \
-  -v $(pwd)/outputs:/app/outputs \
-  -v $(pwd)/uploads:/app/uploads \
-  -v $(pwd)/cache:/app/cache \
-  transcribe
+podman run --rm -p 5001:5001 \
+  -e GEMINI_API_KEY \
+  -v $(pwd)/outputs:/app/outputs:Z \
+  -v $(pwd)/uploads:/app/uploads:Z \
+  -v $(pwd)/cache:/app/cache:Z \
+  ghcr.io/anton264/transcribe:latest
 ```
 
 The app will be available at `http://localhost:5001`.
@@ -73,6 +94,14 @@ The app will be available at `http://localhost:5001`.
 | `outputs/` | Generated markdown and PDF files |
 | `uploads/` | Uploaded audio files |
 | `cache/` | Hugging Face model cache (avoids re-downloading) |
+
+### Building the image locally
+
+```bash
+podman build -t transcribe .
+```
+
+Then replace `ghcr.io/anton264/transcribe:latest` with `transcribe` in the commands above.
 
 ## Pandoc conversion
 
