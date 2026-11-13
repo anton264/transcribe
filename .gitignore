@@ -22,4 +22,6 @@ outputs/
 .agents/
 graphify-out/
 skills-lock.json
-__pycache__/process_audio.cpython-314.pyc
+
+# Branding (keep local)
+logo.png

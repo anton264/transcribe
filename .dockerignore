@@ -11,3 +11,8 @@ uploads/
 *.pdf
 .git/
 .gitignore
+*.odt
+!reference.odt
+*.md
+!template.md
+!README.md
